@@ -1,0 +1,4 @@
+#! /bin/sh
+
+ovs-vsctl del-br gateway
+ip addr add 192.168.56.1/24 dev eth0
