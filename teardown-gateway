@@ -1,4 +1,10 @@
 #! /bin/sh
 
+if test $# -ne 2
+then
+	echo Usage: $0 IFACE IP/MASK
+	exit 1
+fi
+
 ovs-vsctl del-br gateway
-ip addr add 192.168.56.1/24 dev eth0
+ip addr add $2 dev $1
