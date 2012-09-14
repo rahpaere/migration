@@ -8,12 +8,6 @@ import pox.openflow.libopenflow_01 as of
 log = core.getLogger()
 
 
-external_dl_addr = EthAddr("08:00:27:3d:02:cb")
-external_nw_addr = IPAddr("192.168.56.2")
-external_tp_addr = 9999
-update_tp_addr = 9998
-
-
 class Connection(object):
 
   def __init__(self, port, dl_addr, nw_addr, tp_addr, replica):
@@ -179,7 +173,19 @@ class ConnectedSwitch(object):
     log.warning("Unexpected packet")
 
 
-def launch():
+def launch(mac, ip, port=9999, update_port=None):
+  global external_dl_addr
+  global external_nw_addr
+  global external_tp_addr
+  global update_tp_addr
+
+  if update_port is None:
+    update_port = port - 1
+  external_dl_addr = EthAddr(mac)
+  external_nw_addr = IPAddr(ip)
+  external_tp_addr = int(port)
+  update_tp_addr = int(update_port)
+
   def start_switch(event):
     log.debug("Controlling %s" % (event.connection,))
     ConnectedSwitch(event.connection)

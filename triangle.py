@@ -8,15 +8,6 @@ import pox.openflow.libopenflow_01 as of
 log = core.getLogger()
 
 
-external_dl_addr = EthAddr("08:00:27:3d:02:cb")
-external_nw_addr = IPAddr("192.168.56.2")
-external_tp_addr = 9999
-
-self_dl_addr = EthAddr("08:00:27:f5:67:3f")
-internal_dl_addr = EthAddr("00:00:00:00:00:02")
-internal_nw_addr = IPAddr("10.0.0.2")
-
-
 class ConnectedSwitch(object):
 
   def __init__(self, connection):
@@ -72,8 +63,6 @@ class ConnectedSwitch(object):
     # Set up a flow for future messages from the application.
     fm = of.ofp_flow_mod()
     fm.priority = of.OFP_DEFAULT_PRIORITY + 1
-    fm.match.dl_src = internal_dl_addr
-    fm.match.dl_dst = self_dl_addr
     fm.match.dl_type = pkt.ethernet.IP_TYPE
     fm.match.nw_src = internal_nw_addr
     fm.match.nw_dst = ip.srcip
@@ -98,7 +87,19 @@ class ConnectedSwitch(object):
     log.info("New connection from %s:%s" % (str(ip.srcip),  str(tcp.srcport)))
 
 
-def launch():
+def launch(mac, ip, port=9999, replica_mac="00:00:00:00:00:02", replica_ip="10.0.0.2"):
+  global external_dl_addr
+  global external_nw_addr
+  global external_tp_addr
+  global internal_dl_addr
+  global internal_nw_addr
+
+  external_dl_addr = EthAddr(mac)
+  external_nw_addr = IPAddr(ip)
+  external_tp_addr = int(port)
+  internal_dl_addr = EthAddr(replica_mac)
+  internal_nw_addr = IPAddr(replica_ip)
+
   def start_switch(event):
     log.debug("Controlling %s" % (event.connection,))
     ConnectedSwitch(event.connection)
