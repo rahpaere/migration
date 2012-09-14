@@ -1,0 +1,6 @@
+#! /bin/sh
+
+ovs-vsctl del-br triangle
+ip netns delete application
+ip netns delete tcpr
+ip addr add 192.168.56.3/24 dev eth1

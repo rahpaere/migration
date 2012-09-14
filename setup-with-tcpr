@@ -1,0 +1,49 @@
+#! /bin/sh
+
+ovs-vsctl add-br triangle
+ovs-vsctl set-controller triangle tcp:127.0.0.1
+ip link set triangle up
+
+ip addr del 192.168.56.3/24 dev eth1
+ip addr add 192.168.56.3/24 dev triangle
+ovs-vsctl add-port triangle eth1
+
+ip netns add application
+ip netns add tcpr
+
+ip link add application type veth \
+	peer name gateway netns tcpr
+ip link set application up
+
+ip addr add 10.0.0.1/24 dev triangle
+ovs-vsctl add-port triangle application
+
+ip netns exec application sh <<END
+ip link add eth0 address 00:00:00:00:00:02 type veth \
+	peer name application netns tcpr
+ip link set lo up
+ip link set eth0 up
+ip addr add 10.0.0.2/24 dev eth0
+ip route add default via 10.0.0.1
+END
+
+ip netns exec tcpr sh <<END
+ip link add bridge type bridge
+ip link set lo up
+ip link set application up
+ip link set gateway up
+ip link set bridge up
+ip link set application master bridge
+ip link set gateway master bridge
+ip addr add 10.0.0.3/24 dev bridge
+ip route add default via 10.0.0.1
+END
+
+modprobe tcpr
+ip netns exec tcpr iptables-restore <<END
+*mangle
+-A FORWARD -p udp -m physdev --physdev-in application -j TCPR
+-A FORWARD -p tcp -m physdev --physdev-in application -j TCPR
+-A FORWARD -p tcp -m physdev --physdev-out application -j TCPR --peer
+COMMIT
+END
