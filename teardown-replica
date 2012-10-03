@@ -1,6 +1,12 @@
 #! /bin/sh
 
-ovs-vsctl del-br triangle
+if test $# -ne 2
+then
+	echo Usage: $0 IFACE IP/MASK
+	exit 1
+fi
+
+ovs-vsctl del-br replica
 ip netns delete application
 ip netns delete tcpr
-ip addr add 192.168.56.3/24 dev eth1
+ip addr add $2 dev $1

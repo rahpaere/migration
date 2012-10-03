@@ -48,7 +48,7 @@ END
 modprobe tcpr
 ip netns exec tcpr iptables-restore <<END
 *mangle
--A FORWARD -p udp -m physdev --physdev-in application -j TCPR
+-A FORWARD -p udp --dport 7777 -m physdev --physdev-in application -j TCPR
 -A FORWARD -p tcp -m physdev --physdev-in application -j TCPR
 -A FORWARD -p tcp -m physdev --physdev-out application -j TCPR --peer
 COMMIT
