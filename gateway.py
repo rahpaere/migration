@@ -49,7 +49,6 @@ class ConnectedSwitch(object):
     # Send UDP updates to the controller.
     fm = of.ofp_flow_mod()
     fm.priority = of.OFP_DEFAULT_PRIORITY
-    fm.match.dl_dst = external_dl_addr
     fm.match.dl_type = pkt.ethernet.IP_TYPE
     fm.match.nw_dst = external_nw_addr
     fm.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
@@ -173,14 +172,14 @@ class ConnectedSwitch(object):
     log.warning("Unexpected packet")
 
 
-def launch(mac, ip, port=9999, update_port=None):
+def launch(mac, ip, port="9999", update_port=None):
   global external_dl_addr
   global external_nw_addr
   global external_tp_addr
   global update_tp_addr
 
   if update_port is None:
-    update_port = port - 1
+    update_port = int(port) - 1
   external_dl_addr = EthAddr(mac)
   external_nw_addr = IPAddr(ip)
   external_tp_addr = int(port)
