@@ -41,6 +41,7 @@ class ConnectedSwitch(object):
     # Send new connections to the controller.
     fm = of.ofp_flow_mod()
     fm.match.dl_type = pkt.ethernet.IP_TYPE
+    fm.match.nw_dst = replica_nw_addr
     fm.match.nw_proto = pkt.ipv4.TCP_PROTOCOL
     fm.match.tp_dst = application_tp_addr
     fm.actions.append(of.ofp_action_output(port=of.OFPP_CONTROLLER))
