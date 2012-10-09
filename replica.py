@@ -19,9 +19,9 @@ class ConnectedSwitch(object):
     # Forward updates to the application.
     fm = of.ofp_flow_mod()
     fm.match.dl_type = pkt.ethernet.IP_TYPE
+    fm.match.nw_src = gateway_nw_addr
     fm.match.nw_dst = replica_nw_addr
-    fm.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
-    fm.match.tp_dst = update_tp_addr
+    fm.actions.append(of.ofp_action_dl_addr.set_src(replica_dl_addr))
     fm.actions.append(of.ofp_action_dl_addr.set_dst(application_dl_addr))
     fm.actions.append(of.ofp_action_nw_addr.set_dst(application_nw_addr))
     fm.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
@@ -31,8 +31,8 @@ class ConnectedSwitch(object):
     fm = of.ofp_flow_mod()
     fm.match.dl_type = pkt.ethernet.IP_TYPE
     fm.match.nw_src = application_nw_addr
-    fm.match.nw_proto = pkt.ipv4.UDP_PROTOCOL
-    fm.match.tp_dst = update_tp_addr
+    fm.match.nw_dst = gateway_nw_addr
+    fm.actions.append(of.ofp_action_dl_addr.set_dst(gateway_dl_addr))
     fm.actions.append(of.ofp_action_dl_addr.set_src(replica_dl_addr))
     fm.actions.append(of.ofp_action_nw_addr.set_src(replica_nw_addr))
     fm.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
