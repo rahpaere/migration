@@ -63,7 +63,7 @@ class ConnectedSwitch(object):
     ip = packet.find("ipv4")
     tcp = packet.find("tcp")
 
-    if ip is None or tcp is None:
+    if ip is None or ip.dstip != replica_nw_addr or tcp is None or tcp.dstport != application_tp_addr:
       log.warning("Unexpected packet")
       return
 
@@ -99,7 +99,13 @@ class ConnectedSwitch(object):
     # Pass packet along.
     msg = of.ofp_packet_out()
     msg.in_port = packet_in.in_port
-    msg.buffer_id = packet_in.buffer_id
+    if packet_in.buffer_id != -1 and packet_in.buffer_id is not None:
+      msg.buffer_id = packet_in.buffer_id
+    else:
+      if packet_in.data is None:
+        log.debug("Cannot send empty packet")
+        return
+      msg.data = packet_in.data
     msg.actions.append(of.ofp_action_dl_addr.set_dst(application_dl_addr))
     msg.actions.append(of.ofp_action_nw_addr.set_dst(application_nw_addr))
     msg.actions.append(of.ofp_action_output(port=of.OFPP_FLOOD))
