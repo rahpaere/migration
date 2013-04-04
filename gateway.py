@@ -58,6 +58,7 @@ class ConnectedSwitch(object):
 
     # Send new connections to the controller.
     fm.match.nw_proto = pkt.ipv4.TCP_PROTOCOL
+    fm.match.nw_dst = external_nw_addr
     fm.match.tp_dst = external_tp_addr
     fm.actions.append(of.ofp_action_output(port=of.OFPP_CONTROLLER))
     self.connection.send(fm)
@@ -98,7 +99,7 @@ class ConnectedSwitch(object):
     fm.match.tp_dst = external_tp_addr
     self.connection.send(fm)
 
-  def assign_connection(self, packet, tcp, ip, in_port, buffer_id):
+  def assign_connection(self, packet, tcp, ip, in_port, raw_data, buffer_id):
     key = "%s:%s" % (ip.srcip, tcp.srcport)
     if key in self.connections:
       conn = self.connections[key]
@@ -106,7 +107,7 @@ class ConnectedSwitch(object):
       try:
         replica = self.replicas[0]
       except IndexError:
-        log.warning("Cannot assign connection: No application replicas")
+        log.warning("Cannot assign connection from %s:%s: No application replicas" % (ip.srcip, tcp.srcport))
         return
       self.replicas.rotate()
       conn = Connection(port=in_port, dl_addr=packet.src, nw_addr=ip.srcip, tp_addr=tcp.srcport, replica=replica)
@@ -116,7 +117,13 @@ class ConnectedSwitch(object):
 
     msg = of.ofp_packet_out()
     msg.in_port = conn.port
-    msg.buffer_id = buffer_id
+    if buffer_id != -1 and buffer_id is not None:
+      msg.buffer_id = buffer_id
+    else:
+      if raw_data is None:
+        log.debug("Cannot send empty packet")
+        return
+      msg.data = raw_data
     msg.actions.append(of.ofp_action_dl_addr.set_dst(conn.replica.dl_addr))
     msg.actions.append(of.ofp_action_nw_addr.set_dst(conn.replica.nw_addr))
     msg.actions.append(of.ofp_action_output(port=of.OFPP_IN_PORT))
@@ -158,14 +165,17 @@ class ConnectedSwitch(object):
 
     packet_in = event.ofp
     ip = packet.find("ipv4")
+    if ip is None or ip.dstip != external_nw_addr:
+      log.warning("Unexpected packet")
+      return
 
     tcp = packet.find("tcp")
-    if tcp is not None:
-      self.assign_connection(packet, tcp, ip, packet_in.in_port, packet_in.buffer_id)
+    if tcp is not None and tcp.dstport == external_tp_addr:
+      self.assign_connection(packet, tcp, ip, packet_in.in_port, packet_in.data, packet_in.buffer_id)
       return
 
     udp = packet.find("udp")
-    if udp is not None:
+    if udp is not None and udp.dstport == update_tp_addr:
       self.update_replica(packet, udp, ip, packet_in.in_port)
       return
 
